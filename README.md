@@ -5,38 +5,8 @@
 
 **Author: Edward Schmuhl**
 
-This repository contains the Iherb dataset, the training/ -evaluation dataset and the trained model of the Condition Identification and Statment Classification, and multiple Jupyter Notebooks.
+This repository contains the bachelor thesis, its implementation, and datasets.
 
-```text
-bachelorthesis/
-├── Algorithm.ipynb/
-├── ConditionIdentification.ipynb/
-├── StatementExtraction.ipynb/
-├── StatementClassification.ipynb/
-├── Results.ipynb/
-├── models/
-|    ├── condition_identification_model/
-|    ├── statment_classification_model/
-|    └── packages/
-|        ├── en_condition_identification_model-0.0.0
-|        └── en_statement_classification_model-0.0.0
-└── data/
-    ├── iherb_data/
-    |    ├── analyzed_dataset.json
-    |    └── iherb_dataset.csv
-    ├── Conditionidentification_TrainingEvaluation/
-    |    ├── train.json
-    |    └── eval.json
-    └── Statementclassification_TrainingEvaluation/
-         ├── train.json
-         └── eval.json
-```
-
-It is required to have spacy and the english model installed.
-The english model can be installed via ```spacy download en_core_web_trf```
-
-It can occur that spacy cannot resolve the path of the self-trained models ```"./models/condition_identification_model"``` and ```"./models/statment_classification_model"```
-
-In this case, you need to install the models that are contained in the package folder. After installation, use ```spacy.load(<package-name>)``` to import the model. For more information visit spacy.
-
-
+- SpaCy 3.0 or higher is required 
+- SpaCy model en_core_web_trf is required (```spacy download en_core_web_trf```)
+- The trained models can be found on [OneDrive](https://1drv.ms/u/s!An0OhG3IMh2IjzI9skYrgznxs93J?e=1LrhGX) and installed via (```pip install <package-name>```)
