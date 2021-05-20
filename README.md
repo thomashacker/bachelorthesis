@@ -30,6 +30,8 @@ print(algorithm.detect_extract_classify(example_review))
 
 ```
 
+> **Please note:** Running the analyze-dataset script takes time since it directly analyzes the whole iherb-dataset. Feel free to manipulate the script to analyze a batch/subset of the dataset
+
 ## Demo :clapper:
 You can start the two streamlit-demonstration to explore the analyzed dataset and the workflow of the algorithm
 
