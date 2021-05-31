@@ -5,7 +5,7 @@ import os
 import json
 import matplotlib.pyplot as plt
 
-json_dir = 'data/analyzed_dataset.json'
+json_dir = '../data/analyzed_dataset.json'
 json_dict = []
 
 def getData():

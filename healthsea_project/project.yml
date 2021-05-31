@@ -1,0 +1,156 @@
+title: "Healthsea. Detect health conditions in supplement reviews and determine the effect of the products."
+description: "This project trains a NER with the label `CONDITION` and a textcat with three exclusive classes `IMPROVED`,`WORSEN`,`NEUTRAL`. It uses the dependency parsing to extract statements made about found conditions, these statements are then classified by the textcat. For more details, see [our blog post]()."
+# Variables can be referenced across the project.yml using ${vars.var_name}
+vars:
+  version: "0.0.0"
+
+  ner_name: "ner_condition"
+  ner_config: "ner_config.cfg"
+  ner_train: "ner_condition_training"
+  ner_dev: "ner_condition_eval"
+
+  textcat_name: "textcat_sentiment"
+  textcat_config: "textcat_config.cfg"
+  textcat_train: "textcat_sentiment_training"
+  textcat_dev: "textcat_sentiment_eval"
+
+
+# These are the directories that the project needs. The project CLI will make
+# sure that they always exist.
+directories: ["assets", "training", "configs", "scripts", "corpus", "packages"]
+
+# Assets that should be downloaded or available in the directory. We're shipping
+# them with the project, so they won't have to be downloaded. But the
+# 'project assets' command still lets you verify that the checksums match.
+assets:
+  - dest: "assets/${vars.ner_train}.json"
+    description: "JSON-formatted training data exported from Prodigy, annotated with `CONDITION` entities (3441 examples)"
+    checksum: "02c47a4c60c9b8c469756bea4b1d835d"
+  - dest: "assets/${vars.ner_dev}.json"
+    checksum: "ec05dd55ab74ca176926741eaec5553b"
+    description: "JSON-formatted development data exported from Prodigy, annotated with `CONDITION` entities (860 examples)"
+
+  - dest: "assets/${vars.textcat_train}.json"
+    checksum: "181d36c33f3791b7893f0e1c8a54c3c2"
+    description: "JSON-formatted training data exported from Prodigy, annotated with exclusive `IMPROVED`, `WORSEN`, `NEUTRAL` classes (1497 examples)"
+  - dest: "assets/${vars.textcat_dev}.json"
+    checksum: "1522e5d360456929419e92763bece0bd"
+    description: "JSON-formatted development data exported from Prodigy, annotated with exclusive `IMPROVED`, `WORSEN`, `NEUTRAL` classes (369 examples)"
+
+
+# Workflows are sequences of commands (see below) executed in order. You can
+# run them via "spacy project run [workflow]". If a commands's inputs/outputs
+# haven't changed, it won't be re-run.
+workflows:
+  all:
+    - install
+    - preprocess
+    - train_ner
+    - train_textcat
+    - visualize
+  train:
+    - train_ner
+    - train_textcat
+  evaluate:
+    - evaluate_ner
+    - evaluate_textcat
+  package:
+    - package_ner
+    - package_textcat
+
+
+# Project commands, specified in a style similar to CI config files (e.g. Azure
+# pipelines). The name is the command name that lets you trigger the command
+# via "spacy project run [command] [path]". The help message is optional and
+# shown when executing "spacy project run [optional command] [path] --help".
+commands:
+  - name: "install"
+    help: "Install dependencies"
+    script:
+      - "python -m spacy download en_core_web_trf"
+      - "pip install -r requirements.txt"
+
+  - name: "preprocess"
+    help: "Convert the json annotations to spaCy's binary format"
+    script:
+      - "python -m spacy convert assets/${vars.ner_train}.json corpus/"
+      - "python -m spacy convert assets/${vars.ner_dev}.json corpus/"
+      - "python -m spacy convert assets/${vars.textcat_train}.json corpus/"
+      - "python -m spacy convert assets/${vars.textcat_dev}.json corpus/"
+    deps:
+      - "assets/${vars.ner_train}.json"
+      - "assets/${vars.ner_dev}.json"
+      - "assets/${vars.textcat_train}.json"
+      - "assets/${vars.textcat_dev}.json"
+    outputs:
+      - "corpus/${vars.ner_train}.spacy"
+      - "corpus/${vars.ner_dev}.spacy"
+      - "corpus/${vars.textcat_train}.spacy"
+      - "corpus/${vars.textcat_dev}.spacy"
+
+  - name: "train_ner"
+    help: "Train a named entity recognition model"
+    script:
+      - "python -m spacy train configs/${vars.ner_config} --output training/ner/ --paths.train corpus/${vars.ner_train}.spacy --paths.dev corpus/${vars.ner_dev}.spacy"
+    deps:
+      - "corpus/${vars.ner_train}.spacy"
+      - "corpus/${vars.ner_dev}.spacy"
+    outputs:
+      - "training/ner/model-best"
+
+  - name: "train_textcat"
+    help: "Train a text classification model"
+    script:
+      - "python -m spacy train configs/${vars.textcat_config} --output training/textcat/ --paths.train corpus/${vars.textcat_train}.spacy --paths.dev corpus/${vars.textcat_dev}.spacy"
+    deps:
+      - "corpus/${vars.textcat_train}.spacy"
+      - "corpus/${vars.textcat_dev}.spacy"
+    outputs:
+      - "training/textcat/model-best"
+
+  - name: "evaluate_ner"
+    help: "Evaluate the ner model and export metric"
+    script:
+      - "python -m spacy evaluate training/ner/model-best corpus/${vars.ner_dev}.spacy --output training/ner/metrics.json"
+    deps:
+      - "corpus/${vars.ner_dev}.spacy"
+      - "training/ner/model-best"
+    outputs:
+      - "training/ner/metrics.json"
+
+  - name: "evaluate_textcat"
+    help: "Evaluate the textcat model and export metric"
+    script:
+      - "python -m spacy evaluate training/textcat/model-best corpus/${vars.textcat_dev}.spacy --output training/textcat/metrics.json"
+    deps:
+      - "corpus/${vars.textcat_dev}.spacy"
+      - "training/textcat/model-best"
+    outputs:
+      - "training/textcat/metrics.json"
+
+  - name: package_ner
+    help: "Package the trained ner so it can be installed"
+    script:
+      - "python -m spacy package training/ner/model-best packages --name ${vars.ner_name} --version ${vars.version} --force"
+    deps:
+      - "training/ner/model-best"
+    outputs_no_cache:
+      - "packages/en_${vars.ner_name}-${vars.version}/dist/en_${vars.ner_name}-${vars.version}.tar.gz"
+
+  - name: package_textcat
+    help: "Package the trained textcat so it can be installed"
+    script:
+      - "python -m spacy package training/textcat/model-best packages --name ${vars.textcat_name} --version ${vars.version} --force"
+    deps:
+      - "training/textcat/model-best"
+    outputs_no_cache:
+      - "packages/en_${vars.textcat_name}-${vars.version}/dist/en_${vars.textcat_name}-${vars.version}.tar.gz"
+
+  - name: visualize
+    help: Visualize healthsea interactively using Streamlit
+    script:
+      - "streamlit run scripts/visualize_model.py training/ner/model-best training/textcat/model-best"
+    deps:
+      - "scripts/visualize_model.py"
+      - "training/ner/model-best"
+      - "training/textcat/model-best"

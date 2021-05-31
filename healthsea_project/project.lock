@@ -1,0 +1,115 @@
+preprocess:
+  cmd: python -m spacy run preprocess
+  script:
+    - python -m spacy convert assets/ner_condition_training.json corpus/
+    - python -m spacy convert assets/ner_condition_eval.json corpus/
+    - python -m spacy convert assets/textcat_sentiment_training.json corpus/
+    - python -m spacy convert assets/textcat_sentiment_eval.json corpus/
+  deps:
+    - path: assets/ner_condition_training.json
+      md5: 2bfca995ae2be3f252e56f4f3f6aabe7
+    - path: assets/ner_condition_eval.json
+      md5: 55b2de195f86864cb7d21e03419f85e6
+    - path: assets/textcat_sentiment_training.json
+      md5: 181d36c33f3791b7893f0e1c8a54c3c2
+    - path: assets/textcat_sentiment_eval.json
+      md5: 1522e5d360456929419e92763bece0bd
+  outs:
+    - path: corpus/ner_condition_training.spacy
+      md5: 42beaf4fe65095525a2cd9df078c4c5e
+    - path: corpus/ner_condition_eval.spacy
+      md5: a3b84f9a5ce6416ca559538dcffea9b0
+    - path: corpus/textcat_sentiment_training.spacy
+      md5: 64c7c7252c5e68539362057e602895cc
+    - path: corpus/textcat_sentiment_eval.spacy
+      md5: a3372ba9a5cb4a7893d48a45b8f612a7
+  spacy_version: 3.0.6
+  spacy_git_version: df3444421
+evaluate_ner:
+  cmd: python -m spacy run evaluate_ner
+  script:
+    - python -m spacy evaluate training/ner/model-best corpus/ner_condition_eval.spacy
+      --output training/ner/metrics.json -g 0
+  deps:
+    - path: corpus/ner_condition_eval.spacy
+      md5: a3b84f9a5ce6416ca559538dcffea9b0
+    - path: training/ner/model-best
+      md5: f78e859f9a8cdbf6e41407e5131a3d86
+  outs:
+    - path: training/ner/metrics.json
+      md5: fee781113207ddc3510818a70c1a9757
+  spacy_version: 3.0.6
+  spacy_git_version: df3444421
+package_ner:
+  cmd: python -m spacy run package_ner
+  script:
+    - python -m spacy package training/ner/model-best packages --name ner_condition
+      --version 0.0.0 --force
+  deps:
+    - path: training/ner/model-best
+      md5: 662a3af9178d88f6f6c6bdfaa3d7fda1
+  outs:
+    - path: packages/en_ner_condition-0.0.0/dist/en_ner_condition-0.0.0.tar.gz
+      md5: 5e9ab9cac7c88b46a3f9b2d7118ae85b
+  spacy_version: 3.0.6
+  spacy_git_version: df3444421
+evaluate_textcat:
+  cmd: python -m spacy run evaluate_textcat
+  script:
+    - python -m spacy evaluate training/textcat/model-best corpus/textcat_sentiment_eval.spacy
+      --output training/textcat/metrics.json -g 0
+  deps:
+    - path: corpus/textcat_sentiment_eval.spacy
+      md5: a3372ba9a5cb4a7893d48a45b8f612a7
+    - path: training/textcat/model-best
+      md5: 13ccecbe3ad754aff698a8c35082acd2
+  outs:
+    - path: training/textcat/metrics.json
+      md5: 5aedecba5835db29469bdc414a26787d
+  spacy_version: 3.0.6
+  spacy_git_version: df3444421
+package_textcat:
+  cmd: python -m spacy run package_textcat
+  script:
+    - python -m spacy package training/textcat/model-best packages --name textcat_sentiment
+      --version 0.0.0 --force
+  deps:
+    - path: training/textcat/model-best
+      md5: dae52467c273a643490f6173f67ef84b
+  outs:
+    - path: packages/en_textcat_sentiment-0.0.0/dist/en_textcat_sentiment-0.0.0.tar.gz
+      md5: 52d7905eeb4525dfe9121be7c07895c6
+  spacy_version: 3.0.6
+  spacy_git_version: df3444421
+train_ner:
+  cmd: python -m spacy run train_ner
+  script:
+    - python -m spacy train configs/ner_config.cfg --output training/ner/ --paths.train
+      corpus/ner_condition_training.spacy --paths.dev corpus/ner_condition_eval.spacy
+      -g 0
+  deps:
+    - path: corpus/ner_condition_training.spacy
+      md5: 42beaf4fe65095525a2cd9df078c4c5e
+    - path: corpus/ner_condition_eval.spacy
+      md5: a3b84f9a5ce6416ca559538dcffea9b0
+  outs:
+    - path: training/ner/model-best
+      md5: f78e859f9a8cdbf6e41407e5131a3d86
+  spacy_version: 3.0.6
+  spacy_git_version: df3444421
+train_textcat:
+  cmd: python -m spacy run train_textcat
+  script:
+    - python -m spacy train configs/textcat_config.cfg --output training/textcat/
+      --paths.train corpus/textcat_sentiment_training.spacy --paths.dev corpus/textcat_sentiment_eval.spacy
+      -g 0
+  deps:
+    - path: corpus/textcat_sentiment_training.spacy
+      md5: 64c7c7252c5e68539362057e602895cc
+    - path: corpus/textcat_sentiment_eval.spacy
+      md5: a3372ba9a5cb4a7893d48a45b8f612a7
+  outs:
+    - path: training/textcat/model-best
+      md5: 13ccecbe3ad754aff698a8c35082acd2
+  spacy_version: 3.0.6
+  spacy_git_version: df3444421
