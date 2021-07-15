@@ -9,6 +9,10 @@ vars:
   ner_train: "ner_condition_training"
   ner_dev: "ner_condition_eval"
 
+  sub_name: "ner_substance"
+  sub_train: "ner_substance_training"
+  sub_dev: "ner_substance_eval"
+
   textcat_name: "textcat_sentiment"
   textcat_config: "textcat_config.cfg"
   textcat_train: "textcat_sentiment_training"
@@ -37,6 +41,10 @@ assets:
     checksum: "1522e5d360456929419e92763bece0bd"
     description: "JSON-formatted development data exported from Prodigy, annotated with exclusive `IMPROVED`, `WORSEN`, `NEUTRAL` classes (369 examples)"
 
+  - dest: "assets/${vars.sub_train}.json"
+    description: ""
+  - dest: "assets/${vars.sub_dev}.json"
+    description: ""
 
 # Workflows are sequences of commands (see below) executed in order. You can
 # run them via "spacy project run [workflow]". If a commands's inputs/outputs
@@ -77,16 +85,22 @@ commands:
       - "python -m spacy convert assets/${vars.ner_dev}.json corpus/"
       - "python -m spacy convert assets/${vars.textcat_train}.json corpus/"
       - "python -m spacy convert assets/${vars.textcat_dev}.json corpus/"
+      - "python -m spacy convert assets/${vars.sub_train}.json corpus/"
+      - "python -m spacy convert assets/${vars.sub_dev}.json corpus/"
     deps:
       - "assets/${vars.ner_train}.json"
       - "assets/${vars.ner_dev}.json"
       - "assets/${vars.textcat_train}.json"
       - "assets/${vars.textcat_dev}.json"
+      - "assets/${vars.sub_train}.json"
+      - "assets/${vars.sub_dev}.json"
     outputs:
       - "corpus/${vars.ner_train}.spacy"
       - "corpus/${vars.ner_dev}.spacy"
       - "corpus/${vars.textcat_train}.spacy"
       - "corpus/${vars.textcat_dev}.spacy"
+      - "corpus/${vars.sub_train}.spacy"
+      - "corpus/${vars.sub_dev}.spacy"
 
   - name: "train_ner"
     help: "Train a named entity recognition model"
@@ -107,6 +121,16 @@ commands:
       - "corpus/${vars.textcat_dev}.spacy"
     outputs:
       - "training/textcat/model-best"
+
+  - name: "train_sub"
+    help: "Train a named entity recognition model"
+    script:
+      - "python -m spacy train configs/${vars.ner_config} --output training/sub/ --paths.train corpus/${vars.sub_train}.spacy --paths.dev corpus/${vars.sub_dev}.spacy"
+    deps:
+      - "corpus/${vars.sub_train}.spacy"
+      - "corpus/${vars.sub_dev}.spacy"
+    outputs:
+      - "training/sub/model-best"
 
   - name: "evaluate_ner"
     help: "Evaluate the ner model and export metric"
